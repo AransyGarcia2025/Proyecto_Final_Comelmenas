@@ -1,1 +1,181 @@
 
+// === com.apicultor.model.Colmena.java ===
+package com.apicultor.model;
+
+import java.io.Serializable;
+
+public class Colmena implements Serializable {
+    private String id;
+    private String ubicacion;
+    private int cantidadAbejas;
+
+    public Colmena(String id, String ubicacion, int cantidadAbejas) {
+        this.id = id;
+        this.ubicacion = ubicacion;
+        this.cantidadAbejas = cantidadAbejas;
+    }
+
+    public String getId() { return id; }
+    public String getUbicacion() { return ubicacion; }
+    public int getCantidadAbejas() { return cantidadAbejas; }
+
+    public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public void setCantidadAbejas(int cantidadAbejas) { this.cantidadAbejas = cantidadAbejas; }
+
+    @Override
+    public String toString() {
+        return "Colmena ID: " + id + ", Ubicación: " + ubicacion + ", Cantidad de Abejas: " + cantidadAbejas;
+    }
+}
+
+
+// === com.apicultor.service.ColmenaService.java ===
+package com.apicultor.service;
+
+import com.apicultor.model.Colmena;
+import com.apicultor.utils.FileUtils;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class ColmenaService {
+    private List<Colmena> colmenas = new ArrayList<>();
+
+    public ColmenaService() {
+        colmenas = FileUtils.leerColmenasDesdeArchivo();
+    }
+
+    public void agregarColmena(Colmena c) {
+        colmenas.add(c);
+        FileUtils.guardarColmenasEnArchivo(colmenas);
+    }
+
+    public void eliminarColmena(String id) {
+        colmenas.removeIf(c -> c.getId().equalsIgnoreCase(id));
+        FileUtils.guardarColmenasEnArchivo(colmenas);
+    }
+
+    public Colmena buscarColmena(String id) {
+        return colmenas.stream().filter(c -> c.getId().equalsIgnoreCase(id)).findFirst().orElse(null);
+    }
+
+    public List<Colmena> obtenerColmenas() {
+        return colmenas;
+    }
+
+    public void exportarCSV() {
+        FileUtils.exportarColmenasCSV(colmenas);
+    }
+}
+
+
+// === com.apicultor.utils.FileUtils.java ===
+package com.apicultor.utils;
+
+import com.apicultor.model.Colmena;
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class FileUtils {
+    private static final String ARCHIVO_COLMENAS = "colmenas.txt";
+    private static final String ARCHIVO_CSV = "colmenas.csv";
+
+    public static void guardarColmenasEnArchivo(List<Colmena> colmenas) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ARCHIVO_COLMENAS))) {
+            out.writeObject(colmenas);
+        } catch (IOException e) {
+            System.out.println("Error al guardar colmenas: " + e.getMessage());
+        }
+    }
+
+    public static List<Colmena> leerColmenasDesdeArchivo() {
+        List<Colmena> colmenas = new ArrayList<>();
+        if (!Files.exists(Paths.get(ARCHIVO_COLMENAS))) return colmenas;
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(ARCHIVO_COLMENAS))) {
+            colmenas = (List<Colmena>) in.readObject();
+        } catch (Exception e) {
+            System.out.println("No se pudo leer archivo de colmenas: " + e.getMessage());
+        }
+        return colmenas;
+    }
+
+    public static void exportarColmenasCSV(List<Colmena> colmenas) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(ARCHIVO_CSV))) {
+            writer.println("ID,Ubicación,Cantidad de Abejas");
+            for (Colmena c : colmenas) {
+                writer.printf("%s,%s,%d\n", c.getId(), c.getUbicacion(), c.getCantidadAbejas());
+            }
+            System.out.println("Colmenas exportadas correctamente a CSV.");
+        } catch (IOException e) {
+            System.out.println("Error al exportar CSV: " + e.getMessage());
+        }
+    }
+}
+
+
+// === com.apicultor.Main.java ===
+package com.apicultor;
+
+import com.apicultor.model.Colmena;
+import com.apicultor.service.ColmenaService;
+
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        ColmenaService servicio = new ColmenaService();
+        int opcion;
+
+        do {
+            System.out.println("\n=== Sistema de Gestión de Colmenas ===");
+            System.out.println("1. Agregar Colmena");
+            System.out.println("2. Listar Colmenas");
+            System.out.println("3. Eliminar Colmena");
+            System.out.println("4. Buscar Colmena");
+            System.out.println("5. Exportar Colmenas a CSV");
+            System.out.println("0. Salir");
+            System.out.print("Seleccione una opción: ");
+            opcion = scanner.nextInt();
+            scanner.nextLine();
+
+            switch (opcion) {
+                case 1 -> {
+                    System.out.print("Ingrese el ID de la colmena: ");
+                    String id = scanner.nextLine();
+                    System.out.print("Ingrese la ubicación: ");
+                    String ubicacion = scanner.nextLine();
+                    System.out.print("Ingrese la cantidad de abejas: ");
+                    int cantidad = scanner.nextInt();
+                    scanner.nextLine();
+                    servicio.agregarColmena(new Colmena(id, ubicacion, cantidad));
+                    System.out.println("Colmena agregada exitosamente.");
+                }
+                case 2 -> {
+                    System.out.println("Listado de colmenas registradas:");
+                    servicio.obtenerColmenas().forEach(System.out::println);
+                }
+                case 3 -> {
+                    System.out.print("Ingrese el ID de la colmena a eliminar: ");
+                    String id = scanner.nextLine();
+                    servicio.eliminarColmena(id);
+                    System.out.println("Colmena eliminada si existía.");
+                }
+                case 4 -> {
+                    System.out.print("Ingrese el ID de la colmena a buscar: ");
+                    String id = scanner.nextLine();
+                    Colmena encontrada = servicio.buscarColmena(id);
+                    if (encontrada != null)
+                        System.out.println(encontrada);
+                    else
+                        System.out.println("Colmena no encontrada.");
+                }
+                case 5 -> servicio.exportarCSV();
+                case 0 -> System.out.println("Saliendo del sistema...");
+                default -> System.out.println("Opción inválida.");
+            }
+        } while (opcion != 0);
+    }
+}

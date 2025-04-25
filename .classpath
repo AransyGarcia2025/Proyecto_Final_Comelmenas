@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry excluding="service/|utils/|model/" kind="src" path="src/com/apicultor"/>
+	<classpathentry kind="src" path="src/com/apicultor/model"/>
+	<classpathentry kind="src" path="src/com/apicultor/service"/>
+	<classpathentry kind="src" path="src/com/apicultor/utils"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
